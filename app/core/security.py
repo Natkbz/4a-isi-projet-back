@@ -1,12 +1,13 @@
 import secrets
 from pwdlib import PasswordHash
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from datetime import datetime, timedelta, timezone
 import jwt
 from jwt.exceptions import InvalidTokenError
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from typing import Optional
-
+from db.models import User, UserRole
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 #gestion des mots de passe
 # Contexte de hachage Argon2
@@ -51,3 +52,42 @@ def decode_access_token(token: str) -> int:
         return int(user_id_str)
     except (InvalidTokenError, ValueError):
         raise credentials_exception
+    
+#gestion de la récupération de l'user ou de l'admin
+
+# auto_error=False pour renvoyer 401 quand le header Authorization est absent
+bearer_scheme = HTTPBearer(auto_error=False)    
+
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)) -> User:
+    """Vérifie le token Bearer, charge l'utilisateur et contrôle qu'il n'est pas bloqué."""
+    
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token d'authentification manquant",headers={"WWW-Authenticate": "Bearer"})
+
+    user_id = decode_access_token(credentials.credentials)
+
+    # Récupération de l'user avec L'id en db 
+    #-------------------------------------A completer quand la db sera finis------------------------------------------------------
+    # fake user en attendant la db
+    user = User(
+        id=user_id,
+        username="fake_user",
+        password_hash="",
+        role=UserRole.ADMIN,
+        is_blocked=False,
+    )
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Utilisateur introuvable",headers={"WWW-Authenticate": "Bearer"})
+
+    if user.is_blocked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Votre compte a été bloqué")
+
+    return user
+
+
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Retourne l'user si il est bien un admin"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Droits administrateur requis")
+    return current_user
