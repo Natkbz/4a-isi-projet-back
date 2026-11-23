@@ -1,4 +1,3 @@
-
 from contextlib import asynccontextmanager
 from pathlib import Path
 import sys
@@ -16,9 +15,10 @@ sys.modules["db.crud"] = crud
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from db.database import create_db_and_tables
-from app.routers import products
+from app.routers import products, category
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialise poleatheck.sqlite et crée les tables au démarrage du serveur
@@ -38,7 +38,7 @@ app.add_middleware(
 
 
 app.include_router(products.router)
-
+app.include_router(category.router)
 
 @app.get("/ping", tags=["Test"])
 async def ping():
