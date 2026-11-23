@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from db.models import UserRole
 
 
@@ -21,3 +21,20 @@ class PasswordUpdate(BaseModel):
 
 class UserBlockUpdate(BaseModel):
     is_blocked: bool
+    
+class UserRegister(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+
+
+class UserRegisterResponse(UserRead):
+    password: str
+
+
+class UserLogin(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
