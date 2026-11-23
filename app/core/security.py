@@ -9,6 +9,11 @@ from typing import Optional
 from db.models import User, UserRole
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from sqlmodel import Session
+from db import crud
+from db.database import get_session
+from db.models import User, UserRole
+
 #gestion des mots de passe
 # Contexte de hachage Argon2
 password_hasher = PasswordHash.recommended()
@@ -58,7 +63,7 @@ def decode_access_token(token: str) -> int:
 # auto_error=False pour renvoyer 401 quand le header Authorization est absent
 bearer_scheme = HTTPBearer(auto_error=False)    
 
-def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)) -> User:
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),session: Session = Depends(get_session)) -> User:
     """Vérifie le token Bearer, charge l'utilisateur et contrôle qu'il n'est pas bloqué."""
     
     if credentials is None or credentials.scheme.lower() != "bearer":
@@ -67,15 +72,7 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
     user_id = decode_access_token(credentials.credentials)
 
     # Récupération de l'user avec L'id en db 
-    #-------------------------------------A completer quand la db sera finis------------------------------------------------------
-    # fake user en attendant la db
-    user = User(
-        id=user_id,
-        username="fake_user",
-        password_hash="",
-        role=UserRole.ADMIN,
-        is_blocked=False,
-    )
+    user = crud.get_user_by_id(session, user_id)
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Utilisateur introuvable",headers={"WWW-Authenticate": "Bearer"})
