@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from db.database import create_db_and_tables
-
+from app.routers import products
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialise poleatheck.sqlite et crée les tables au démarrage du serveur
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     yield #avant yield s'execute au démarrage et après yield à l'extinction
     
 app = FastAPI(title="Pol-eat-heck API",description="API REST de gestion des menus hebdomadaires et de réservation de produits",lifespan=lifespan)
-    
+
 # Autorise les requêtes fetch() du front-end en développement local
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(products.router)
 
 
 @app.get("/ping", tags=["Test"])
