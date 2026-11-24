@@ -16,7 +16,7 @@ sys.modules["db.crud"] = crud
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db.database import create_db_and_tables
-from app.routers import products, category, menu, closure, auth, user
+from app.routers import products, category, menu, closure, auth, user, order
 
 
 @asynccontextmanager
@@ -43,6 +43,7 @@ app.include_router(menu.router)
 app.include_router(closure.router)
 app.include_router(auth.router)
 app.include_router(user.router)
+app.include_router(order.router)
 
 @app.get("/ping", tags=["Test"])
 async def ping():
