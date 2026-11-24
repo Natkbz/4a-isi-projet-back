@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 
-from app.core.security import get_current_user
-from app.schemas.order import OrderRead, OrderCreate
+from app.core.security import get_current_user, get_current_admin
+from app.schemas.order import OrderRead, OrderCreate, OrderStatus
 from db import crud
 from db.database import get_session
 from db.models import User
@@ -46,3 +46,19 @@ def create_order(payload: OrderCreate, current_user: User = Depends(get_current_
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return build_order_read(order)
+
+@router.get("/admin/orders", response_model=list[OrderRead])
+def list_all_orders(user_id: int | None = None, order_status: OrderStatus | None = Query(default=None, alias="status"),
+    admin: User = Depends(get_current_admin),session: Session = Depends(get_session)):
+    
+    orders = crud.get_all_orders(session)
+
+    to_return = []
+    for order in orders:
+        if user_id is not None and order.user_id != user_id:
+            continue
+        if order_status is not None and order.status != order_status:
+            continue
+        to_return.append(build_order_read(order))
+
+    return to_return
