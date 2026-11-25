@@ -11,7 +11,7 @@ router = APIRouter(tags=["Users"])
 @router.patch("/users/password", status_code=status.HTTP_204_NO_CONTENT)
 def update_own_password(payload: PasswordUpdate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     if not verify_password(payload.old_password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Mot de passe actuel incorrect")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mot de passe actuel incorrect")
 
     current_user.password_hash = hash_password(payload.new_password)
     session.add(current_user)
